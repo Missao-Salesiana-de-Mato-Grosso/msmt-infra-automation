@@ -49,6 +49,7 @@ wait_for_state "DBaaS" "active,running,available" 1800 instance_state "$id"
 
 # Instância criada pelo painel: a senha do admin não foi gerada aqui. Pede uma vez, sem eco, e guarda em secrets/.
 if [[ -z "$(read_secret database.env DB_ADMIN_PASSWORD)" ]]; then
+  [[ -t 0 ]] || die "A senha do admin não está em secrets/database.env e não há terminal para pedi-la. Rode numa janela do Terminal."
   read -r -s -p "Senha do usuário '$DB_ADMIN_USER' da instância (não aparece na tela): " admin_password
   printf '\n'
   [[ -n "$admin_password" ]] || die "Senha vazia."

@@ -41,6 +41,9 @@ require_var() {
 # Pergunta antes de uma ação que cria ou altera recursos (com custo, em produção).
 confirm() {
   [[ "${ASSUME_YES:-0}" == "1" ]] && return 0
+  # Sem terminal (ex.: `!` do Claude Code, CI), o read falharia em silêncio: avisa em vez de sair calado.
+  [[ -t 0 ]] || die "Confirmação necessária, mas não há terminal interativo: $*
+  Rode este comando numa janela do Terminal (recomendado) ou repita com ASSUME_YES=1 se já revisou o que será feito."
   local answer
   read -r -p "${BOLD}$* [s/N]${RESET} " answer
   [[ "$answer" =~ ^[sS]$ ]] || die "Cancelado."
