@@ -1,22 +1,32 @@
-# Valores do chart do Traefik (ADR-007). O roteamento de cada app (Ingress/IngressRoute) fica no repo do app.
+# Valores do chart do Traefik 42.x (ADR-007), conferidos com `helm show values traefik/traefik --version 42.1.3`.
+# O roteamento de cada app (Ingress/IngressRoute) fica no repo do app.
 deployment:
   replicas: 2
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
+# IngressClass "traefik", padrão do cluster (os ClusterIssuers do cert-manager usam esse nome).
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+  name: traefik
 service:
   type: LoadBalancer
 ports:
   web:
-    # HTTP só redireciona para HTTPS.
-    redirections:
-      entryPoint:
-        to: websecure
-        scheme: https
-        permanent: true
+    # Desafio HTTP-01 do Let's Encrypt passa direto, sem o redirecionamento abaixo.
+    allowACMEByPass: true
+    http:
+      # HTTP só redireciona para HTTPS.
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
   websecure:
-    tls:
-      enabled: true
+    http:
+      tls:
+        enabled: true
 providers:
   kubernetesIngress:
     enabled: true
@@ -24,10 +34,9 @@ providers:
     enabled: true
     # O ServersTransport h2c do Zitadel fica no mesmo namespace da IngressRoute dele.
     allowCrossNamespace: false
-logs:
-  access:
-    enabled: true
-    # Não registrar o header Authorization (regra de segurança do helpdesk).
-    fields:
-      headers:
-        defaultmode: drop
+accessLog:
+  enabled: true
+  fields:
+    headers:
+      # Nenhum header no log de acesso (o Authorization nunca é registrado; regra de segurança do helpdesk).
+      defaultMode: drop

@@ -12,6 +12,11 @@ hlm repo add traefik https://traefik.github.io/charts >/dev/null 2>&1 || true
 hlm repo add jetstack https://charts.jetstack.io >/dev/null 2>&1 || true
 hlm repo update traefik jetstack >/dev/null
 
+info "Validação local dos valores (sem tocar o cluster)"
+helm template traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" -n traefik \
+  -f "$ROOT/helm/traefik-values.yaml" >/dev/null || die "helm/traefik-values.yaml não passa no schema do chart $TRAEFIK_CHART_VERSION."
+ok "Valores do Traefik válidos"
+
 info "Traefik"
 # Service LoadBalancer: a Magalu cria o balanceador e o IP público (vai para o DNS).
 hlm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" \
