@@ -34,7 +34,7 @@ make status             # só leitura
 
 ## A conferir na 1ª execução
 
-Os comandos e flags vêm do `mgc --help` (v0.48). Alguns formatos de saída só se confirmam contra a conta real:
+Os comandos e flags vêm do `mgc --help` (conferidos na v0.67). Alguns formatos de saída só se confirmam contra a conta real:
 
 - estados finais de cluster e DBaaS (`running`/`active`) e o campo do endereço privado do DBaaS;
 - os campos da chave do Object Storage (`api-key get`) e o endpoint S3 (P4 em `helpdesk/docs/ambientes.md` §2.0);

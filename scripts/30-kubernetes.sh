@@ -14,7 +14,7 @@ else
     --argjson n "$K8S_NODE_COUNT" \
     '[{name: $name, flavor: $flavor, replicas: $n, auto_scale: {min_replicas: $n, max_replicas: $n}}]')
   args=(--name "$K8S_CLUSTER_NAME" --description "MSMT produção (help desk e Zitadel)"
-    --enabled-server-group=true --node-pools "$node_pools")
+    --node-pools "$node_pools")
   [[ -n "$K8S_VERSION" ]] && args+=(--version "$K8S_VERSION")
   if [[ -n "$K8S_ALLOWED_CIDRS" ]]; then
     args+=(--allowed-cidrs "$(jq -cn --arg c "$K8S_ALLOWED_CIDRS" '$c | split(",")')")
