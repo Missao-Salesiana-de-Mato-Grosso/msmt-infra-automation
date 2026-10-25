@@ -6,20 +6,20 @@ source "$(dirname "$0")/lib/common.sh"
 # Usa uma chave só do CLI, separada da do app; o mgc a guarda na configuração dele, nada vai para secrets/.
 ensure_cli_key() {
   info "Chave do Object Storage para o CLI ('$OBJECT_STORAGE_CLI_KEY_NAME')"
-  if mgc object-storage api-key current --region "$MGC_REGION" >/dev/null 2>&1; then
+  if mgc object-storage api-key current >/dev/null 2>&1; then
     ok "O mgc já tem uma chave selecionada"
     return
   fi
   local uuid
-  uuid=$(mgc_json object-storage api-key list | jq -r --arg n "$OBJECT_STORAGE_CLI_KEY_NAME" \
+  uuid=$(mgc_json_global object-storage api-key list | jq -r --arg n "$OBJECT_STORAGE_CLI_KEY_NAME" \
     '[.. | objects | select(.name? == $n) | (.uuid // .id)][0] // empty')
   if [[ -z "$uuid" ]]; then
     confirm "Criar a chave '$OBJECT_STORAGE_CLI_KEY_NAME' (usada só pelo mgc desta máquina)?"
-    uuid=$(mgc_json object-storage api-key create --name "$OBJECT_STORAGE_CLI_KEY_NAME" \
+    uuid=$(mgc_json_global object-storage api-key create --name "$OBJECT_STORAGE_CLI_KEY_NAME" \
       --description "mgc do msmt-infra-automation" | first_value "uuid,id")
     [[ -n "$uuid" ]] || die "Não consegui ler o uuid da chave criada. Confira: mgc object-storage api-key list"
   fi
-  mgc object-storage api-key set --uuid "$uuid" --region "$MGC_REGION" >/dev/null 2>&1 ||
+  mgc object-storage api-key set --uuid "$uuid" >/dev/null 2>&1 ||
     die "Não consegui selecionar a chave $uuid. Tente: mgc object-storage api-key set --uuid $uuid"
   ok "Chave selecionada no mgc"
 }
@@ -45,16 +45,16 @@ info "Credencial do Object Storage para o app ('$OBJECT_STORAGE_KEY_NAME')"
 if [[ -n "$(read_secret object-storage.env S3_ACCESS_KEY)" ]]; then
   ok "Já existe em secrets/object-storage.env"
 else
-  existing=$(mgc_json object-storage api-key list | find_id_by_name "$OBJECT_STORAGE_KEY_NAME")
+  existing=$(mgc_json_global object-storage api-key list | find_id_by_name "$OBJECT_STORAGE_KEY_NAME")
   [[ -z "$existing" ]] ||
     die "Já existe uma chave '$OBJECT_STORAGE_KEY_NAME' na conta, mas não em secrets/. Revogue-a (mgc object-storage api-key revoke) ou copie os valores para secrets/object-storage.env à mão."
   warn "A chave do Object Storage da Magalu vale para todos os buckets da conta (não há escopo por bucket no CLI)."
   confirm "Criar a chave '$OBJECT_STORAGE_KEY_NAME'?"
-  created=$(mgc_json object-storage api-key create --name "$OBJECT_STORAGE_KEY_NAME" \
+  created=$(mgc_json_global object-storage api-key create --name "$OBJECT_STORAGE_KEY_NAME" \
     --description "helpdesk: anexos e backups")
   key_id=$(printf '%s' "$created" | first_value "uuid,id")
   [[ -n "$key_id" ]] || die "Não consegui ler o id da chave criada. Confira: mgc object-storage api-key list"
-  details=$(mgc_json object-storage api-key get "$key_id")
+  details=$(mgc_json_global object-storage api-key get "$key_id")
   access=$(printf '%s' "$details" | first_value "key_pair_id,access_key,access_key_id")
   secret=$(printf '%s' "$details" | first_value "key_pair_secret,secret_key,secret_access_key")
   [[ -n "$access" && -n "$secret" ]] ||

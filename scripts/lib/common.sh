@@ -50,9 +50,24 @@ confirm() {
 }
 
 # mgc com saída JSON e sem cores. O aviso de versão desatualizada sai antes do JSON: é descartado.
-mgc_json() {
-  mgc "$@" --region "$MGC_REGION" --output json --raw 2>/dev/null | sed -n '/^[[:space:]]*[[{]/,$p'
+# Em caso de falha, mostra o erro do mgc (nunca a saída, que pode conter chaves) em vez de sair calado.
+_mgc_json() {
+  local err out
+  err=$(mktemp)
+  if out=$(mgc "$@" --output json --raw 2>"$err"); then
+    rm -f "$err"
+    printf '%s\n' "$out" | sed -n '/^[[:space:]]*[[{]/,$p'
+  else
+    warn "mgc ${*:1:3} falhou: $(grep -v -i 'outdated version' "$err" | head -3)"
+    rm -f "$err"
+    return 1
+  fi
 }
+
+mgc_json() { _mgc_json "$@" --region "$MGC_REGION"; }
+
+# Comandos sem região (ex.: object-storage api-key), que rejeitam --region.
+mgc_json_global() { _mgc_json "$@"; }
 
 # mgc para ações (criar/alterar): mostra a saída do CLI, sem confirmação dupla do próprio mgc.
 mgc_run() {
