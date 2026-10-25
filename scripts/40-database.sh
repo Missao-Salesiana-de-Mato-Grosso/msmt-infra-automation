@@ -24,10 +24,12 @@ if [[ -n "$id" ]]; then
   ok "Já existe ($id)"
 else
   engine_id=$(mgc_json dbaas engines list --status ACTIVE | jq -r --arg n "$DB_ENGINE_NAME" --arg v "$DB_ENGINE_VERSION" \
-    '[.. | objects | select((.name? | ascii_downcase) == $n and ((.version? // "") | tostring | startswith($v)))][0].id // empty')
+    '[.results[]? | select((.name // "" | ascii_downcase) == $n and ((.version // "") | tostring) == $v)][0].id // empty')
   [[ -n "$engine_id" ]] || die "Engine $DB_ENGINE_NAME $DB_ENGINE_VERSION não encontrado. Opções: mgc dbaas engines list"
-  type_id=$(mgc_json dbaas instance-types list | jq -r --arg n "$DB_INSTANCE_TYPE" \
-    '[.. | objects | select(.name? == $n or .label? == $n)][0].id // empty')
+  # O mesmo rótulo (ex.: BV1-4-10) existe para cada engine e produto: filtra pelo engine e por instância única.
+  type_id=$(mgc_json dbaas instance-types list --engine-id "$engine_id" --status ACTIVE --control.limit 200 |
+    jq -r --arg n "$DB_INSTANCE_TYPE" \
+      '[.results[]? | select(.compatible_product == "SINGLE_INSTANCE" and (.label == $n or .name == $n))][0].id // empty')
   [[ -n "$type_id" ]] || die "Tipo '$DB_INSTANCE_TYPE' não encontrado. Opções: mgc dbaas instance-types list"
 
   admin_password=$(read_secret database.env DB_ADMIN_PASSWORD)
@@ -101,8 +103,12 @@ CREATE EXTENSION IF NOT EXISTS citext;
 SQL
 )
 pod="db-bootstrap-$(date +%s)"
-# O SQL (com as senhas) vai pela entrada padrão, nunca pela linha de comando ou pelo log.
-printf '%s\n' "$sql" | kctl run "$pod" --rm -i --restart=Never --quiet --image=postgres:17-alpine \
-  --env "PGPASSWORD=$(read_secret database.env DB_ADMIN_PASSWORD)" -- \
-  psql "host=$host user=$DB_ADMIN_USER dbname=postgres sslmode=require" -v ON_ERROR_STOP=1 -q
+# Senha do admin (1ª linha) e SQL vão pela entrada padrão: nada de segredo na especificação do pod, na linha
+# de comando ou no log. sslmode=prefer: usa TLS se o DBaaS oferecer (rede privada de qualquer forma).
+{
+  read_secret database.env DB_ADMIN_PASSWORD
+  printf '%s\n' "$sql"
+} | kctl run "$pod" --rm -i --restart=Never --quiet --image=postgres:17-alpine -- \
+  sh -c 'IFS= read -r PGPASSWORD; export PGPASSWORD; exec psql "host='"$host"' user='"$DB_ADMIN_USER"' dbname=postgres sslmode=prefer" -v ON_ERROR_STOP=1 -q' ||
+  die "Falhou a criação dos bancos. Se for timeout de conexão, o cluster não alcança o DBaaS (P10)."
 ok "Bancos e usuários prontos. Senhas em secrets/database.env (não impressas)"
