@@ -41,5 +41,18 @@ mv "$kc.tmp" "$kc"
 chmod 600 "$kc"
 ok "Gravado em ${kc#"$ROOT"/} (não versionado)"
 
-info "Nós"
-kctl get nodes -o wide
+info "Acesso ao cluster e nós"
+# Logo depois do `running`, a Magalu ainda aplica as permissões do kube-user e termina os nós: tenta por até 10 min.
+for attempt in $(seq 1 30); do
+  if kctl auth can-i list nodes >/dev/null 2>&1 &&
+    [[ "$(kctl get nodes --no-headers 2>/dev/null | grep -c ' Ready')" -ge "$K8S_NODE_COUNT" ]]; then
+    kctl get nodes -o wide
+    ok "Cluster pronto"
+    exit 0
+  fi
+  printf '   acesso/nós ainda não prontos (tentativa %s/30)… aguardando\n' "$attempt"
+  sleep 20
+done
+kctl auth whoami 2>&1 || true
+kctl get nodes 2>&1 || true
+die "O kube-user ainda não tem acesso ou os nós não ficaram Ready em 10 min. Veja a saída acima e o painel."
