@@ -6,11 +6,13 @@ source "$(dirname "$0")/lib/common.sh"
 # Usa uma chave só do CLI, separada da do app; o mgc a guarda na configuração dele, nada vai para secrets/.
 ensure_cli_key() {
   info "Chave do Object Storage para o CLI ('$OBJECT_STORAGE_CLI_KEY_NAME')"
-  if mgc object-storage api-key current >/dev/null 2>&1; then
+  # O `current` sai com código 0 mesmo sem chave ("No current API key set!"): confere o uuid no JSON.
+  local uuid current
+  current=$(mgc_json_global object-storage api-key current 2>/dev/null | first_value "uuid" || true)
+  if [[ -n "$current" ]]; then
     ok "O mgc já tem uma chave selecionada"
     return
   fi
-  local uuid
   uuid=$(mgc_json_global object-storage api-key list | jq -r --arg n "$OBJECT_STORAGE_CLI_KEY_NAME" \
     '[.. | objects | select(.name? == $n) | (.uuid // .id)][0] // empty')
   if [[ -z "$uuid" ]]; then
@@ -27,7 +29,10 @@ ensure_cli_key() {
 ensure_bucket() {
   local bucket="$1"
   info "Bucket '$bucket'"
-  if mgc_json object-storage buckets list | find_id_by_name "$bucket" | grep -q .; then
+  local buckets
+  # Falha na listagem não pode virar "não existe": pararia numa tentativa de criar um bucket existente.
+  buckets=$(mgc_json object-storage buckets list) || die "Não consegui listar os buckets (erro acima)."
+  if printf '%s' "$buckets" | find_id_by_name "$bucket" | grep -q .; then
     ok "Já existe"
     return
   fi
