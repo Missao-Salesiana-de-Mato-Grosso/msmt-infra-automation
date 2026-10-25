@@ -15,7 +15,7 @@ próprios repositórios (`helpdesk`: `make deploy`, manifestos em `deploy/k8s` e
 ## Uso
 
 ```bash
-brew upgrade mgc        # mínimo v0.67 (config/prod.env)
+brew upgrade mgccli     # a fórmula é mgccli (o comando é mgc); mínimo v0.67
 brew install jq helm    # kubectl e openssl já existem
 mgc auth login          # abre o navegador; confira o tenant: mgc auth tenant current
 make preflight          # não cria nada

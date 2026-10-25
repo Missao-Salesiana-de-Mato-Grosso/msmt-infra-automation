@@ -3,7 +3,7 @@
 source "$(dirname "$0")/lib/common.sh"
 
 info "Ferramentas"
-require_cmd mgc "Instale: brew install magalucloud/mgc/mgc"
+require_cmd mgc "Instale: brew install magalucloud/mgccli/mgccli"
 require_cmd jq "Instale: brew install jq"
 require_cmd openssl "Vem com o macOS."
 require_cmd kubectl "Instale: brew install kubectl"
@@ -12,7 +12,7 @@ require_cmd helm "Instale: brew install helm"
 version=$(mgc --version 2>/dev/null | sed -n 's/.*version v\{0,1\}\([0-9][0-9.]*\).*/\1/p' | head -1)
 [[ -n "$version" ]] || die "Não consegui ler a versão do mgc."
 version_ge "$version" "$MGC_MIN_VERSION" ||
-  die "mgc $version é antigo (mínimo $MGC_MIN_VERSION). Atualize: brew upgrade mgc"
+  die "mgc $version é antigo (mínimo $MGC_MIN_VERSION). Atualize: brew upgrade mgccli"
 ok "mgc $version, $(kubectl version --client 2>/dev/null | head -1), helm $(helm version --short 2>/dev/null)"
 
 info "Login na Magalu Cloud"
