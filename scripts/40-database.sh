@@ -36,6 +36,28 @@ fi
 
 wait_for_state "DBaaS" "active,running,available" 1800 instance_state "$id"
 
+# Instância criada pelo painel: a senha do admin não foi gerada aqui. Pede uma vez, sem eco, e guarda em secrets/.
+if [[ -z "$(read_secret database.env DB_ADMIN_PASSWORD)" ]]; then
+  read -r -s -p "Senha do usuário '$DB_ADMIN_USER' da instância (não aparece na tela): " admin_password
+  printf '\n'
+  [[ -n "$admin_password" ]] || die "Senha vazia."
+  write_secret database.env DB_ADMIN_PASSWORD "$admin_password"
+  ok "Senha gravada em secrets/database.env"
+fi
+
+# Retenção de backup, horário e proteção contra exclusão: garante os valores do config mesmo se criada pelo painel.
+current=$(mgc_json dbaas instances get "$id")
+retention=$(printf '%s' "$current" | jq -r '[.. | objects | .backup_retention_days? // empty][0] // empty')
+protected=$(printf '%s' "$current" | jq -r '[.. | objects | .deletion_protected? | select(. != null)][0] // empty')
+if [[ "$retention" != "$DB_BACKUP_RETENTION_DAYS" || "$protected" != "true" ]]; then
+  confirm "Ajustar a instância: backup por $DB_BACKUP_RETENTION_DAYS dias às $DB_BACKUP_START_AT UTC e proteção contra exclusão (hoje: retenção=${retention:-?}, protegida=${protected:-?})?"
+  mgc_run dbaas instances update --instance-id "$id" --backup-retention-days "$DB_BACKUP_RETENTION_DAYS" \
+    --backup-start-at "$DB_BACKUP_START_AT" --deletion-protected >/dev/null
+  ok "Backup e proteção ajustados"
+else
+  ok "Backup ($retention dias) e proteção contra exclusão já ativos"
+fi
+
 details=$(mgc_json dbaas instances get "$id")
 host=$(printf '%s' "$details" | jq -r '[.. | objects | select(.access? == "PRIVATE" or .type? == "private") | (.address // .ip // empty)][0] // empty')
 [[ -n "$host" ]] || host=$(printf '%s' "$details" | first_value "address,host,ip")
