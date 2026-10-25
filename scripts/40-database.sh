@@ -68,7 +68,7 @@ SQL
 )
 pod="db-bootstrap-$(date +%s)"
 # O SQL (com as senhas) vai pela entrada padrão, nunca pela linha de comando ou pelo log.
-printf '%s\n' "$sql" | kctl run "$pod" --rm -i --restart=Never --quiet --image=postgres:16-alpine \
+printf '%s\n' "$sql" | kctl run "$pod" --rm -i --restart=Never --quiet --image=postgres:17-alpine \
   --env "PGPASSWORD=$(read_secret database.env DB_ADMIN_PASSWORD)" -- \
   psql "host=$host user=$DB_ADMIN_USER dbname=postgres sslmode=require" -v ON_ERROR_STOP=1 -q
 ok "Bancos e usuários prontos. Senhas em secrets/database.env (não impressas)"
