@@ -2,6 +2,28 @@
 # Buckets privados de anexos (T13) e de backups, e a credencial do app (vai para secrets/).
 source "$(dirname "$0")/lib/common.sh"
 
+# Os comandos de bucket do mgc exigem uma chave do Object Storage selecionada no próprio CLI (além do login).
+# Usa uma chave só do CLI, separada da do app; o mgc a guarda na configuração dele, nada vai para secrets/.
+ensure_cli_key() {
+  info "Chave do Object Storage para o CLI ('$OBJECT_STORAGE_CLI_KEY_NAME')"
+  if mgc object-storage api-key current --region "$MGC_REGION" >/dev/null 2>&1; then
+    ok "O mgc já tem uma chave selecionada"
+    return
+  fi
+  local uuid
+  uuid=$(mgc_json object-storage api-key list | jq -r --arg n "$OBJECT_STORAGE_CLI_KEY_NAME" \
+    '[.. | objects | select(.name? == $n) | (.uuid // .id)][0] // empty')
+  if [[ -z "$uuid" ]]; then
+    confirm "Criar a chave '$OBJECT_STORAGE_CLI_KEY_NAME' (usada só pelo mgc desta máquina)?"
+    uuid=$(mgc_json object-storage api-key create --name "$OBJECT_STORAGE_CLI_KEY_NAME" \
+      --description "mgc do msmt-infra-automation" | first_value "uuid,id")
+    [[ -n "$uuid" ]] || die "Não consegui ler o uuid da chave criada. Confira: mgc object-storage api-key list"
+  fi
+  mgc object-storage api-key set --uuid "$uuid" --region "$MGC_REGION" >/dev/null 2>&1 ||
+    die "Não consegui selecionar a chave $uuid. Tente: mgc object-storage api-key set --uuid $uuid"
+  ok "Chave selecionada no mgc"
+}
+
 ensure_bucket() {
   local bucket="$1"
   info "Bucket '$bucket'"
@@ -15,6 +37,7 @@ ensure_bucket() {
   ok "Criado"
 }
 
+ensure_cli_key
 ensure_bucket "$BUCKET_ATTACHMENTS"
 ensure_bucket "$BUCKET_BACKUPS"
 
