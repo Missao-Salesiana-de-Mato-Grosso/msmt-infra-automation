@@ -5,10 +5,21 @@ source "$(dirname "$0")/lib/common.sh"
 require_var DB_INSTANCE_TYPE "Opções: mgc dbaas instance-types list"
 
 instance_id() { mgc_json dbaas instances list | find_id_by_name "$DB_INSTANCE_NAME"; }
+
+# A listagem padrão omite instâncias com falha. Uma instância com erro e o mesmo nome bloqueia a criação.
+failed_instance() {
+  local status
+  for status in ERROR ERROR_DELETING ERROR_RESIZING ERROR_STARTING; do
+    mgc_json dbaas instances list --status "$status" | find_id_by_name "$DB_INSTANCE_NAME"
+  done | head -1
+}
 instance_state() { mgc_json dbaas instances get "$1" | first_value "status,state"; }
 
 info "Instância DBaaS '$DB_INSTANCE_NAME'"
 id=$(instance_id)
+failed=$(failed_instance)
+[[ -z "$id" && -n "$failed" ]] &&
+  die "A instância '$DB_INSTANCE_NAME' existe com status de ERRO ($failed). Exclua pelo painel (ou: mgc dbaas instances delete $failed) e rode de novo."
 if [[ -n "$id" ]]; then
   ok "Já existe ($id)"
 else
