@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Buckets privados de anexos (T13) e de backups, e a credencial do app (vai para secrets/).
+# Bucket privado do help desk (msmt-helpdesk; pastas attachments/, inbound/, backups/) e a credencial do app (vai para secrets/).
 source "$(dirname "$0")/lib/common.sh"
 
 # Os comandos de bucket do mgc exigem uma chave do Object Storage selecionada no próprio CLI (além do login).
@@ -38,8 +38,7 @@ ensure_bucket() {
 }
 
 ensure_cli_key
-ensure_bucket "$BUCKET_ATTACHMENTS"
-ensure_bucket "$BUCKET_BACKUPS"
+ensure_bucket "$BUCKET_HELPDESK"
 
 info "Credencial do Object Storage para o app ('$OBJECT_STORAGE_KEY_NAME')"
 if [[ -n "$(read_secret object-storage.env S3_ACCESS_KEY)" ]]; then
@@ -51,7 +50,7 @@ else
   warn "A chave do Object Storage da Magalu vale para todos os buckets da conta (não há escopo por bucket no CLI)."
   confirm "Criar a chave '$OBJECT_STORAGE_KEY_NAME'?"
   created=$(mgc_json_global object-storage api-key create --name "$OBJECT_STORAGE_KEY_NAME" \
-    --description "helpdesk: anexos e backups")
+    --description "helpdesk: bucket $BUCKET_HELPDESK")
   key_id=$(printf '%s' "$created" | first_value "uuid,id")
   [[ -n "$key_id" ]] || die "Não consegui ler o id da chave criada. Confira: mgc object-storage api-key list"
   details=$(mgc_json_global object-storage api-key get "$key_id")
@@ -70,5 +69,5 @@ Valores não secretos para o Secret do app (helpdesk/docs/ambientes.md §2.1):
   STORAGE_DRIVER=s3
   S3_ENDPOINT=https://$MGC_REGION.magaluobjects.com   # ⚠️ P4: confirmar no painel
   S3_REGION=$MGC_REGION
-  S3_BUCKET=$BUCKET_ATTACHMENTS
+  S3_BUCKET=$BUCKET_HELPDESK
 MSG

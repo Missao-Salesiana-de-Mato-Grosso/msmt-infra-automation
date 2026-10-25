@@ -1,13 +1,15 @@
 # msmt-infra-automation
 
-Infraestrutura da Missão Salesiana de Mato Grosso na **Magalu Cloud**, criada pelo CLI `mgc` com scripts
+Infraestrutura do ecossistema de produtos da Missão Salesiana de Mato Grosso na **Magalu Cloud**. O help desk
+é o primeiro produto; os próximos reaproveitam o cluster, o registry e o DBaaS, cada um com seu bucket
+(`msmt-<produto>`) e seu banco., criada pelo CLI `mgc` com scripts
 idempotentes. Este repositório cria a plataforma; os apps (help desk e Zitadel) são publicados pelos
 próprios repositórios (`helpdesk`: `make deploy`, manifestos em `deploy/k8s` e `deploy/zitadel`).
 
 | Recurso | Script | Observação |
 | --- | --- | --- |
 | Container Registry | `10-registry.sh` | imagens do `make deploy` |
-| Object Storage | `20-object-storage.sh` | buckets privados `helpdesk-anexos` e `helpdesk-backups`, chave do app |
+| Object Storage | `20-object-storage.sh` | bucket privado `msmt-helpdesk` (pastas `attachments/`, `inbound/`, `backups/`), chave do app |
 | Kubernetes gerenciado | `30-kubernetes.sh` | 2 nós (ADR-007 do helpdesk), kubeconfig em `secrets/` |
 | DBaaS PostgreSQL | `40-database.sh` | bancos e usuários `zitadel` e `helpdesk`, backup automático |
 | Add-ons | `50-addons.sh` | Traefik (LoadBalancer), cert-manager, ClusterIssuers do Let's Encrypt |

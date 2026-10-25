@@ -8,8 +8,7 @@ show() {
   if mgc_json "$@" | find_id_by_name "$name" | grep -q .; then ok "$label '$name'"; else warn "$label '$name' não existe"; fi
 }
 show "Registry" "$REGISTRY_NAME" container-registry registries list
-show "Bucket" "$BUCKET_ATTACHMENTS" object-storage buckets list
-show "Bucket" "$BUCKET_BACKUPS" object-storage buckets list
+show "Bucket" "$BUCKET_HELPDESK" object-storage buckets list
 show "Cluster" "$K8S_CLUSTER_NAME" kubernetes cluster list
 show "DBaaS" "$DB_INSTANCE_NAME" dbaas instances list
 if [[ -f "$(kubeconfig_path)" ]]; then
