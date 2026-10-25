@@ -1,0 +1,5 @@
+# Senhas, chaves e kubeconfig gerados pelos scripts. Nunca versionar.
+secrets/
+*.kubeconfig
+*.tmp
+.DS_Store

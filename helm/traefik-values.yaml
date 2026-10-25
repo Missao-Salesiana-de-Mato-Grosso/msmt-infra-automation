@@ -1,0 +1,33 @@
+# Valores do chart do Traefik (ADR-007). O roteamento de cada app (Ingress/IngressRoute) fica no repo do app.
+deployment:
+  replicas: 2
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+service:
+  type: LoadBalancer
+ports:
+  web:
+    # HTTP só redireciona para HTTPS.
+    redirections:
+      entryPoint:
+        to: websecure
+        scheme: https
+        permanent: true
+  websecure:
+    tls:
+      enabled: true
+providers:
+  kubernetesIngress:
+    enabled: true
+  kubernetesCRD:
+    enabled: true
+    # O ServersTransport h2c do Zitadel fica no mesmo namespace da IngressRoute dele.
+    allowCrossNamespace: false
+logs:
+  access:
+    enabled: true
+    # Não registrar o header Authorization (regra de segurança do helpdesk).
+    fields:
+      headers:
+        defaultmode: drop
