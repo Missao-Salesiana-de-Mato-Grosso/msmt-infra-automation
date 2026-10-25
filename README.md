@@ -15,6 +15,7 @@ próprios repositórios (`helpdesk`: `make deploy`, manifestos em `deploy/k8s` e
 ## Uso
 
 ```bash
+brew trust magalucloud/mgccli   # Homebrew recente recusa taps de terceiros sem isso (tap oficial da Magalu)
 brew upgrade mgccli     # a fórmula é mgccli (o comando é mgc); mínimo v0.67
 brew install jq helm    # kubectl e openssl já existem
 mgc auth login          # abre o navegador; confira o tenant: mgc auth tenant current

@@ -3,7 +3,7 @@
 source "$(dirname "$0")/lib/common.sh"
 
 info "Ferramentas"
-require_cmd mgc "Instale: brew install magalucloud/mgccli/mgccli"
+require_cmd mgc "Instale: brew trust magalucloud/mgccli && brew install magalucloud/mgccli/mgccli"
 require_cmd jq "Instale: brew install jq"
 require_cmd openssl "Vem com o macOS."
 require_cmd kubectl "Instale: brew install kubectl"
