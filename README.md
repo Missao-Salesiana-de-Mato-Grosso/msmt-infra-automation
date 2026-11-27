@@ -14,6 +14,24 @@ próprios repositórios (`helpdesk`: `make deploy`, manifestos em `deploy/k8s` e
 | DBaaS PostgreSQL | `40-database.sh` | bancos e usuários `zitadel` e `helpdesk`, backup automático |
 | Add-ons | `50-addons.sh` | Traefik (LoadBalancer), cert-manager, ClusterIssuers do Let's Encrypt |
 
+## Produtos no cluster
+
+Os apps são publicados pelos próprios repositórios (Kustomize/`app.sh` e pipeline de cada um), reaproveitando os recursos acima.
+Todos usam o Traefik (LoadBalancer `201.23.74.106`) e o ClusterIssuer `letsencrypt-prod`; o DNS fica na Cloudflare como **DNS only**
+(com o proxy ligado, o Let's Encrypt não valida e o HTTPS dá 526).
+
+| Produto | Repositório | Namespace | Host | Imagem (`cr-msmt-prd/…`) | Banco / bucket | Desde |
+| --- | --- | --- | --- | --- | --- | --- |
+| Help desk | `helpdesk` | `helpdesk` | `suporte.msmt.org.br` | `helpdesk` | `helpdesk` / `msmt-helpdesk` | 2026-10 |
+| Zitadel | `helpdesk` (`deploy/prod/zitadel.sh`, Helm) | `zitadel` | `auth.msmt.org.br` | chart oficial | `zitadel` / — | 2026-10 |
+| Workspace | `msmt-workspace` | `workspace` | `app.msmt.org.br` | `workspace` | — / — | 2026-11-16 |
+| BI (front) | `msmt-webapp-bi` | `msmt-webapp-bi` | `bi.msmt.org.br` | `msmt-webapp-bi` | — / — | 2026-11-27 |
+
+- **BI**: F1 é só o front estático (nginx) com dados fictícios, aberto para validação de layout. Na F2 entra a `msmt-api-bi` no mesmo host
+  (rota `/api`); banco ou bucket próprios, se vierem, são criados por aqui antes, com issue.
+- Cada repositório de app tem os secrets `KUBECONFIG_PROD` (conteúdo de `secrets/kubeconfig-k8s-msmt-prd.yaml`) e `MGC_API_KEY`
+  (API Key própria do repositório, no usuário, escopos do Container Registry leitura e escrita). Ver `docs/ci-cd.md`.
+
 ## Uso
 
 ```bash

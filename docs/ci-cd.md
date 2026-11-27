@@ -29,3 +29,20 @@ no GitHub do `helpdesk`, não aqui) e usa, a partir daqui:
 Nenhum arquivo de `secrets/` deste repositório é lido diretamente pela pipeline (ela não tem
 acesso a esta máquina); os valores são copiados manualmente, uma vez, para os secrets do GitHub
 do `helpdesk`, e atualizados ali sempre que forem rotacionados aqui.
+
+## Outros produtos
+
+O mesmo modelo vale para o **Workspace** (`msmt-workspace`) e o **BI** (`msmt-webapp-bi`): cada um tem pipeline própria, com
+os secrets `KUBECONFIG_PROD` e `MGC_API_KEY` no próprio repositório (tabela "Produtos no cluster" no `README.md`).
+
+- **Renovação do kubeconfig**: o certificado do kubeconfig vale cerca de 1 ano (até ~10/2027). Ao renovar ou recriar o cluster,
+  atualize o `KUBECONFIG_PROD` nos **três** repositórios (`helpdesk`, `msmt-workspace`, `msmt-webapp-bi`). Para não colar o
+  conteúdo em lugar nenhum: `gh secret set KUBECONFIG_PROD -R Missao-Salesiana-de-Mato-Grosso/<repo> < secrets/kubeconfig-k8s-msmt-prd.yaml`.
+- **Chaves da Magalu**: uma API Key por repositório (`github-actions-workspace`, `github-actions-bi`…), para revogar uma sem
+  derrubar as outras. Use o campo **API Key** (UUID), não o ID/Secret; chave sem escopo do Container Registry dá `403 Acesso negado`
+  em `mgc container-registry credentials get`.
+- **Contas de serviço**: `Kubernetes` (`cloud.kubernetes.…`) pertence ao cluster gerenciado e não deve ser usada nem alterada;
+  `helpdesk-app` é só do bucket do helpdesk.
+- **Ideia para depois**: uma conta de serviço `ci-deploy` para as chaves de CI, em vez de chaves do usuário. Exige testar
+  `mgc container-registry users create` para a conta de serviço antes de migrar.
+
